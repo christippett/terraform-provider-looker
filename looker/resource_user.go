@@ -103,7 +103,10 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	userID := *user.Id
 
 	creds := d.Get("credentials_email").([]interface{})[0]
-	sdk.CreateUserCredentialsEmail(userID, makeCredentialsEmail(creds), "", nil)
+	_, err = sdk.CreateUserCredentialsEmail(userID, makeCredentialsEmail(creds), "", nil)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	d.SetId(strconv.Itoa(int(userID)))
 
@@ -128,13 +131,16 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("ui_state", user.UiState); err != nil {
+		return diag.FromErr(err)
+	}
+
 	d.Set("first_name", user.FirstName)
 	d.Set("last_name", user.LastName)
 	d.Set("locale", user.Locale)
 	d.Set("is_disabled", user.IsDisabled)
 	d.Set("home_folder_id", user.HomeFolderId)
 	d.Set("models_dir_validated", user.ModelsDirValidated)
-	d.Set("ui_state", user.UiState)
 
 	return diags
 }

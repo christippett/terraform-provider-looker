@@ -31,28 +31,6 @@ func TestAccCLookerUserBasics(t *testing.T) {
 	})
 }
 
-func testAccCheckLookerUserDestroy(s *terraform.State) error {
-	sdk := testAccProvider.Meta().(*v3.LookerSDK)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "looker_user" {
-			continue
-		}
-
-		userID, err := strconv.ParseInt(rs.Primary.ID, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		_, err = sdk.DeleteUser(userID, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func testAccCheckLookerUserBasic(firstName, lastName, email string) string {
 	return fmt.Sprintf(`
 	resource "looker_user" "new" {
@@ -80,4 +58,26 @@ func testAccCheckLookerExists(n string) resource.TestCheckFunc {
 
 		return nil
 	}
+}
+
+func testAccCheckLookerUserDestroy(s *terraform.State) error {
+	sdk := testAccProvider.Meta().(*v3.LookerSDK)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "looker_user" {
+			continue
+		}
+
+		userID, err := strconv.ParseInt(rs.Primary.ID, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		_, err = sdk.DeleteUser(userID, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

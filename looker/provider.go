@@ -10,7 +10,7 @@ import (
 	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
 )
 
-var defaultLookerAPIVersion string = "3.1"
+var defaultAPIVersion string = "3.1"
 
 // Provider -
 func Provider() *schema.Provider {
@@ -35,7 +35,7 @@ func Provider() *schema.Provider {
 			"api_version": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("LOOKER_API_VERSION", defaultLookerAPIVersion),
+				DefaultFunc: schema.EnvDefaultFunc("LOOKER_API_VERSION", defaultAPIVersion),
 			},
 			"verify_ssl": {
 				Type:        schema.TypeBool,
@@ -56,18 +56,17 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	apiVersion := d.Get("api_version").(string)
+	timeout := d.Get("timeout").(int)
 
 	cfg := rtl.ApiSettings{
-		BaseUrl:   d.Get("base_url").(string),
-		VerifySsl: d.Get("verify_ssl").(bool),
-		// Timeout:      d.Get("timeout").(int32),
-		Timeout:      120,
-		AgentTag:     "",
-		FileName:     "",
+		BaseUrl:      d.Get("base_url").(string),
+		VerifySsl:    d.Get("verify_ssl").(bool),
+		Timeout:      int32(timeout),
 		ClientId:     d.Get("client_id").(string),
 		ClientSecret: d.Get("client_secret").(string),
-		ApiVersion:   apiVersion,
+		ApiVersion:   d.Get("api_version").(string),
+		AgentTag:     "",
+		FileName:     "",
 	}
 
 	// Warning or errors can be collected in a slice type
@@ -75,7 +74,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	var sdk *v3.LookerSDK
 
 	// New instance of LookerSDK
-	if strings.HasPrefix(apiVersion, "3.") {
+	if strings.HasPrefix(cfg.ApiVersion, "3.") {
 		sdk = v3.NewLookerSDK(rtl.NewAuthSession(cfg))
 	} else {
 		diags = append(diags, diag.Diagnostic{
