@@ -49,7 +49,8 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"looker_user": resourceUser(),
+			"looker_user":    resourceUser(),
+			"looker_project": resourceProject(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -65,8 +66,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		ClientId:     d.Get("client_id").(string),
 		ClientSecret: d.Get("client_secret").(string),
 		ApiVersion:   d.Get("api_version").(string),
-		AgentTag:     "",
-		FileName:     "",
+		AgentTag:     "Terraform",
 	}
 
 	// Warning or errors can be collected in a slice type
