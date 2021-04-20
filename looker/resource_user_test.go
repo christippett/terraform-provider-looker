@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
 )
 
 func TestAccCLookerUserBasics(t *testing.T) {
@@ -22,7 +21,7 @@ func TestAccCLookerUserBasics(t *testing.T) {
 		CheckDestroy: testAccCheckLookerUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckLookerUserBasic(firstName, lastName, email),
+				Config: generateLookerUserConfig(firstName, lastName, email),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckLookerExists("looker_user.new"),
 				),
@@ -31,7 +30,7 @@ func TestAccCLookerUserBasics(t *testing.T) {
 	})
 }
 
-func testAccCheckLookerUserBasic(firstName, lastName, email string) string {
+func generateLookerUserConfig(firstName, lastName, email string) string {
 	return fmt.Sprintf(`
 	resource "looker_user" "new" {
 		first_name = "%s"
@@ -61,7 +60,7 @@ func testAccCheckLookerExists(n string) resource.TestCheckFunc {
 }
 
 func testAccCheckLookerUserDestroy(s *terraform.State) error {
-	sdk := testAccProvider.Meta().(*v3.LookerSDK)
+	sdk := testAccProvider.Meta().(*Config).sdk
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "looker_user" {

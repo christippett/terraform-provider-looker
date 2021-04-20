@@ -2,6 +2,9 @@ package looker
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -10,113 +13,99 @@ import (
 
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceProjectCreate,
-		ReadContext:   resourceProjectRead,
-		UpdateContext: resourceProjectUpdate,
-		DeleteContext: resourceProjectDelete,
+		CreateContext: createResourceProject,
+		ReadContext:   readResourceProject,
+		UpdateContext: updateResourceProject,
+		DeleteContext: deleteResourceProject,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"validation_required": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"allow_warnings": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
+			},
+			"git_deploy_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
+func createResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+	sdk := m.(*Config).sdk
 
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
+	// Create project
+	writeProject := createWriteProject(d)
+	project, err := sdk.CreateProject(writeProject, nil)
 
-	name := d.Get("name").(string)
-	validationRequired := d.Get("validation_required").(bool)
-	allowWarnings := d.Get("allow_warnings").(bool)
+	if err == nil {
+		d.SetId(*project.Id)
 
-	projectDetails := v3.WriteProject{
-		Name:               &name,
-		ValidationRequired: &validationRequired,
-		AllowWarnings:      &allowWarnings,
-	}
+	} else if err != nil && strings.Contains(err.Error(), http.StatusText(http.StatusUnprocessableEntity)) {
+		log.Printf("A project named '%s' already exists and will be linked to this resource.", *writeProject.Name)
+		d.SetId(*writeProject.Name)
 
-	// Set session workspace to "dev"
-	err := updateSession(sdk, "dev")
-	if err != nil {
+	} else {
 		return diag.FromErr(err)
 	}
 
-	project, err := sdk.CreateProject(projectDetails, nil)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	// Create SSH public key for use with git - ignore errors
+	sdk.CreateGitDeployKey(d.Id(), nil)
 
-	d.SetId(*project.Id)
-
-	resourceProjectRead(ctx, d, m)
-
-	return diags
+	return readResourceProject(ctx, d, m)
 }
 
-func resourceProjectRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
-	// Set session workspace to "dev"
-	err := updateSession(sdk, "dev")
-	if err != nil {
-		return diag.FromErr(err)
-	}
+func readResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+	sdk := m.(*Config).sdk
 
 	project, err := sdk.Project(d.Id(), "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// key, err := sdk.GitDeployKey(*project.Id, nil)
+	// if err != nil {
+	// 	return diag.FromErr(err)
+	// }
 
 	d.Set("name", project.Name)
 	d.Set("validation_required", project.ValidationRequired)
 	d.Set("allow_warnings", project.AllowWarnings)
+	// d.Set("git_deploy_key", key)
 
 	return diags
 }
 
-func resourceProjectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
-
-	// Set session workspace to "dev"
-	err := updateSession(sdk, "dev")
-	if err != nil {
-		return diag.FromErr(err)
-	}
+func updateResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+	sdk := m.(*Config).sdk
 
 	project, err := sdk.Project(d.Id(), "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	var writeProject v3.WriteProject
 
-	writeProject.Name = d.Get("name").(*string)
-	writeProject.ValidationRequired = d.Get("validation_required").(*bool)
-	writeProject.AllowWarnings = d.Get("alloww_warnings").(*bool)
-
+	writeProject := createWriteProject(d)
 	_, err = sdk.UpdateProject(*project.Id, writeProject, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	return resourceProjectRead(ctx, d, m)
+	return readResourceProject(ctx, d, m)
 }
 
-func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func deleteResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+	d.SetId("")
+
 	return diag.Diagnostics{
 		diag.Diagnostic{
 			Severity: diag.Warning,
@@ -126,10 +115,17 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interf
 	}
 }
 
-func updateSession(sdk *v3.LookerSDK, workspaceId string) error {
-	sessionDetail := v3.WriteApiSession{
-		WorkspaceId: &workspaceId,
+func createWriteProject(d *schema.ResourceData) v3.WriteProject {
+	name := d.Get("name").(string)
+	validationRequired := d.Get("validation_required").(bool)
+	allowWarnings := d.Get("allow_warnings").(bool)
+
+	// Remove invalid characters from name
+	name = formatName(name)
+
+	return v3.WriteProject{
+		Name:               &name,
+		ValidationRequired: &validationRequired,
+		AllowWarnings:      &allowWarnings,
 	}
-	_, err := sdk.UpdateSession(sessionDetail, nil)
-	return err
 }

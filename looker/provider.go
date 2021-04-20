@@ -2,7 +2,7 @@ package looker
 
 import (
 	"context"
-	"strings"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -10,11 +10,14 @@ import (
 	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
 )
 
-var defaultAPIVersion string = "3.1"
+var (
+	version           string = "dev"
+	defaultAPIVersion string = "3.1"
+)
 
 // Provider -
 func Provider() *schema.Provider {
-	return &schema.Provider{
+	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"base_url": {
 				Type:        schema.TypeString,
@@ -47,55 +50,91 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("LOOKER_TIMEOUT", nil),
 			},
+			"workspace_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("LOOKER_WORKSPACE_ID", nil),
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"looker_user":    resourceUser(),
 			"looker_project": resourceProject(),
 		},
-		ConfigureContextFunc: providerConfigure,
+		DataSourcesMap: map[string]*schema.Resource{
+			"looker_session": dataSession(),
+		},
 	}
+	p.ConfigureContextFunc = configure(version, p)
+	return p
 }
 
-func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	timeout := d.Get("timeout").(int)
+type Config struct {
+	sdk         *v3.LookerSDK
+	AccessToken *string
+	WorkspaceId *string
+	AuthSession *rtl.AuthSession
+}
 
-	cfg := rtl.ApiSettings{
-		BaseUrl:      d.Get("base_url").(string),
-		VerifySsl:    d.Get("verify_ssl").(bool),
-		Timeout:      int32(timeout),
-		ClientId:     d.Get("client_id").(string),
-		ClientSecret: d.Get("client_secret").(string),
-		ApiVersion:   d.Get("api_version").(string),
-		AgentTag:     "Terraform",
+func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	var (
+		sdk        *v3.LookerSDK
+		config     Config
+		configured = false
+	)
+
+	return func(ctx context.Context, d *schema.ResourceData) (m interface{}, diags diag.Diagnostics) {
+
+		if configured {
+			return &config, nil
+		}
+
+		workspaceId := d.Get("workspace_id").(string)
+		timeout := d.Get("timeout").(int)
+
+		clientConfig := rtl.ApiSettings{
+			BaseUrl:      d.Get("base_url").(string),
+			VerifySsl:    d.Get("verify_ssl").(bool),
+			Timeout:      int32(timeout),
+			ClientId:     d.Get("client_id").(string),
+			ClientSecret: d.Get("client_secret").(string),
+			ApiVersion:   d.Get("api_version").(string),
+			AgentTag:     p.UserAgent("terraform-provider-scaffolding", version),
+		}
+
+		// New instance of LookerSDK
+		authSession := rtl.NewAuthSession(clientConfig)
+		sdk = v3.NewLookerSDK(authSession)
+
+		token, err := sdk.Login(v3.RequestLogin{
+			ClientId:     &clientConfig.ClientId,
+			ClientSecret: &clientConfig.ClientSecret,
+		}, nil)
+		if err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Unable to authenticate with Looker SDK",
+				Detail:   err.Error(),
+			})
+			return nil, diags
+		}
+
+		sessionDetail := v3.WriteApiSession{
+			WorkspaceId: &workspaceId,
+		}
+		session, err := sdk.UpdateSession(sessionDetail, nil)
+		if err != nil {
+			return nil, diag.FromErr(err)
+		}
+		fmt.Printf("Updated workspace for token: %s (%s)\n", *token.AccessToken, *session.WorkspaceId)
+
+		config = Config{
+			sdk:         sdk,
+			AccessToken: token.AccessToken,
+			WorkspaceId: session.WorkspaceId,
+			AuthSession: authSession,
+		}
+		configured = true
+
+		return &config, nil
 	}
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-	var sdk *v3.LookerSDK
-
-	// New instance of LookerSDK
-	if strings.HasPrefix(cfg.ApiVersion, "3.") {
-		sdk = v3.NewLookerSDK(rtl.NewAuthSession(cfg))
-	} else {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unsupported Looker API version",
-		})
-		return nil, diags
-	}
-
-	_, err := sdk.Login(v3.RequestLogin{
-		ClientId:     &cfg.ClientId,
-		ClientSecret: &cfg.ClientSecret,
-	}, nil)
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to authenticate with Looker SDK",
-			Detail:   err.Error(),
-		})
-		return nil, diags
-	}
-
-	return sdk, diags
 }

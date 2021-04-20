@@ -72,11 +72,9 @@ func resourceUser() *schema.Resource {
 	}
 }
 
-func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
+func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+	config := m.(*Config)
+	sdk := config.sdk
 
 	firstName := d.Get("first_name").(string)
 	lastName := d.Get("last_name").(string)
@@ -116,7 +114,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 }
 
 func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
+	sdk := m.(*Config).sdk
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
@@ -146,7 +144,7 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 }
 
 func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
+	sdk := m.(*Config).sdk
 
 	userID, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
@@ -174,7 +172,7 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 }
 
 func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	sdk := m.(*v3.LookerSDK)
+	sdk := m.(*Config).sdk
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
