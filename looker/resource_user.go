@@ -67,6 +67,18 @@ func resourceUser() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"group_ids": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
+			"role_ids": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
 		},
 	}
 }
@@ -80,20 +92,32 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
-	userID := *user.Id
-	d.SetId(strconv.Itoa(int(userID)))
+	userId := *user.Id
+	d.SetId(strconv.Itoa(int(userId)))
 
+	// create email credentials
 	creds := d.Get("credentials_email").([]interface{})[0]
-	_, err = sdk.CreateUserCredentialsEmail(userID, makeCredentialsEmail(creds), "", nil)
+	_, err = sdk.CreateUserCredentialsEmail(userId, makeCredentialsEmail(creds), "", nil)
 	if err != nil {
 		// delete user if unable to create email credential
-		_, err = sdk.DeleteUser(userID, nil)
+		_, err = sdk.DeleteUser(userId, nil)
 		return diag.FromErr(err)
 	}
 
-	resourceUserRead(ctx, d, m)
+	// add user to group(s)
+	groups := d.Get("group_ids").([]int64)
+	for g := range groups {
+		u := v3.GroupIdForGroupUserInclusion{
+			UserId: &userId,
+		}
+		sdk.AddGroupUser(int64(g), u, nil)
+	}
 
-	return diags
+	// add user to role(s)
+	roles := d.Get("role_ids").([]int64)
+	sdk.SetUserRoles(userId, roles, "", nil)
+
+	return resourceUserRead(ctx, d, m)
 }
 
 func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -102,12 +126,12 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
 
-	userID, err := strconv.ParseInt(d.Id(), 10, 64)
+	userId, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	user, err := sdk.User(userID, "", nil)
+	user, err := sdk.User(userId, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -122,6 +146,8 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	d.Set("is_disabled", user.IsDisabled)
 	d.Set("home_folder_id", user.HomeFolderId)
 	d.Set("models_dir_validated", user.ModelsDirValidated)
+	d.Set("group_ids", user.GroupIds)
+	d.Set("role_ids", user.RoleIds)
 
 	return diags
 }
@@ -129,13 +155,13 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	sdk := m.(*Config).sdk
 
-	userID, err := strconv.ParseInt(d.Id(), 10, 64)
+	userId, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	user := makeWriteUser(d)
-	_, err = sdk.UpdateUser(userID, user, "", nil)
+	_, err = sdk.UpdateUser(userId, user, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -146,12 +172,12 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	sdk := m.(*Config).sdk
 
-	userID, err := strconv.ParseInt(d.Id(), 10, 64)
+	userId, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	_, err = sdk.DeleteUser(userID, nil)
+	_, err = sdk.DeleteUser(userId, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
