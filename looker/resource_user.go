@@ -3,7 +3,6 @@ package looker
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -76,39 +75,21 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	config := m.(*Config)
 	sdk := config.sdk
 
-	firstName := d.Get("first_name").(string)
-	lastName := d.Get("last_name").(string)
-	locale := d.Get("locale").(string)
-	isDisabled := d.Get("is_disabled").(bool)
-	homeFolderID := d.Get("home_folder_id").(string)
-	modelsDirValidated := d.Get("models_dir_validated").(bool)
-	uiState := d.Get("ui_state").(map[string]interface{})
-
-	userDetails := v3.WriteUser{
-		FirstName:          &firstName,
-		LastName:           &lastName,
-		Locale:             &locale,
-		IsDisabled:         &isDisabled,
-		HomeFolderId:       &homeFolderID,
-		ModelsDirValidated: &modelsDirValidated,
-		UiState:            &uiState,
-	}
-
-	user, err := sdk.CreateUser(userDetails, "", nil)
+	user, err := sdk.CreateUser(makeWriteUser(d), "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	userID := *user.Id
+	d.SetId(strconv.Itoa(int(userID)))
 
 	creds := d.Get("credentials_email").([]interface{})[0]
 	_, err = sdk.CreateUserCredentialsEmail(userID, makeCredentialsEmail(creds), "", nil)
 	if err != nil {
-		// Clean/remove user if unable to create email credential
+		// delete user if unable to create email credential
 		_, err = sdk.DeleteUser(userID, nil)
 		return diag.FromErr(err)
 	}
-
-	d.SetId(strconv.Itoa(int(userID)))
 
 	resourceUserRead(ctx, d, m)
 
@@ -153,31 +134,17 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
-	var writeUser v3.WriteUser
-
-	if d.HasChange("first_name") {
-		writeUser.FirstName = d.Get("first_name").(*string)
-	}
-
-	if d.HasChange("last_name") {
-		writeUser.LastName = d.Get("last_name").(*string)
-	}
-
-	_, err = sdk.UpdateUser(userID, writeUser, "", nil)
+	user := makeWriteUser(d)
+	_, err = sdk.UpdateUser(userID, user, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.Set("last_updated", time.Now().Format(time.RFC850))
-
 	return resourceUserRead(ctx, d, m)
 }
 
-func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	sdk := m.(*Config).sdk
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
 
 	userID, err := strconv.ParseInt(d.Id(), 10, 64)
 	if err != nil {
@@ -189,8 +156,6 @@ func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
-	// d.SetId("") is automatically called assuming delete returns no errors, but
-	// it is added here for explicitness.
 	d.SetId("")
 
 	return diags
@@ -204,6 +169,27 @@ func makeCredentialsEmail(creds interface{}) v3.WriteCredentialsEmail {
 		Email:                          &email,
 		ForcedPasswordResetAtNextLogin: &forcedReset,
 	}
+}
+
+func makeWriteUser(d *schema.ResourceData) v3.WriteUser {
+	firstName := d.Get("first_name").(string)
+	lastName := d.Get("last_name").(string)
+	locale := d.Get("locale").(string)
+	isDisabled := d.Get("is_disabled").(bool)
+	homeFolderID := d.Get("home_folder_id").(string)
+	modelsDirValidated := d.Get("models_dir_validated").(bool)
+	uiState := d.Get("ui_state").(map[string]interface{})
+
+	user := v3.WriteUser{
+		FirstName:          &firstName,
+		LastName:           &lastName,
+		Locale:             &locale,
+		IsDisabled:         &isDisabled,
+		HomeFolderId:       &homeFolderID,
+		ModelsDirValidated: &modelsDirValidated,
+		UiState:            &uiState,
+	}
+	return user
 }
 
 func flattenCredentialsEmail(creds *v3.CredentialsEmail) []interface{} {

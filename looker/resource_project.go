@@ -13,10 +13,10 @@ import (
 
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: createResourceProject,
-		ReadContext:   readResourceProject,
-		UpdateContext: updateResourceProject,
-		DeleteContext: deleteResourceProject,
+		CreateContext: resourceProjectCreate,
+		ReadContext:   resourceProjectRead,
+		UpdateContext: resourceProjectUpdate,
+		DeleteContext: resourceProjectDelete,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -32,16 +32,11 @@ func resourceProject() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"git_deploy_key": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
 		},
 	}
 }
 
-func createResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	sdk := m.(*Config).sdk
 
 	// Create project
@@ -59,13 +54,10 @@ func createResourceProject(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	// Create SSH public key for use with git - ignore errors
-	sdk.CreateGitDeployKey(d.Id(), nil)
-
-	return readResourceProject(ctx, d, m)
+	return resourceProjectRead(ctx, d, m)
 }
 
-func readResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+func resourceProjectRead(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	sdk := m.(*Config).sdk
 
 	project, err := sdk.Project(d.Id(), "", nil)
@@ -73,20 +65,14 @@ func readResourceProject(ctx context.Context, d *schema.ResourceData, m interfac
 		return diag.FromErr(err)
 	}
 
-	// key, err := sdk.GitDeployKey(*project.Id, nil)
-	// if err != nil {
-	// 	return diag.FromErr(err)
-	// }
-
 	d.Set("name", project.Name)
 	d.Set("validation_required", project.ValidationRequired)
 	d.Set("allow_warnings", project.AllowWarnings)
-	// d.Set("git_deploy_key", key)
 
 	return diags
 }
 
-func updateResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+func resourceProjectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	sdk := m.(*Config).sdk
 
 	project, err := sdk.Project(d.Id(), "", nil)
@@ -100,10 +86,10 @@ func updateResourceProject(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	return readResourceProject(ctx, d, m)
+	return resourceProjectRead(ctx, d, m)
 }
 
-func deleteResourceProject(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	d.SetId("")
 
 	return diag.Diagnostics{

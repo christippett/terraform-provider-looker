@@ -48,7 +48,7 @@ func readDataSession(ctx context.Context, d *schema.ResourceData, m interface{})
 		return diag.FromErr(err)
 	}
 
-	d.Set("access_token", config.AccessToken)
+	d.Set("access_token", config.accessToken)
 	d.Set("workspace_id", session.WorkspaceId)
 	d.Set("user_id", me.Id)
 	d.Set("email", me.Email)

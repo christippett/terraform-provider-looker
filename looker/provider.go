@@ -2,6 +2,7 @@ package looker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -57,8 +58,9 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"looker_user":    resourceUser(),
-			"looker_project": resourceProject(),
+			"looker_user":           resourceUser(),
+			"looker_project":        resourceProject(),
+			"looker_git_deploy_key": resourceGitDeployKey(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"looker_session": dataSession(),
@@ -70,9 +72,10 @@ func Provider() *schema.Provider {
 
 type Config struct {
 	sdk         *v3.LookerSDK
-	AccessToken *string
-	WorkspaceId *string
-	AuthSession *rtl.AuthSession
+	accessToken *string
+	workspaceId *string
+	session     *rtl.AuthSession
+	url         string
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -110,9 +113,10 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		config := Config{
 			sdk:         sdk,
-			AccessToken: accessToken,
-			WorkspaceId: session.WorkspaceId,
-			AuthSession: authSession,
+			accessToken: accessToken,
+			workspaceId: session.WorkspaceId,
+			session:     authSession,
+			url:         fmt.Sprintf("%s/api/%s", authSession.Config.BaseUrl, authSession.Config.ApiVersion),
 		}
 
 		return &config, nil

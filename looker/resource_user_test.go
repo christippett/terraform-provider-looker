@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccCLookerUserBasics(t *testing.T) {
+func TestAccLookerUserBasics(t *testing.T) {
 	firstName := "John"
 	lastName := "Smith"
 	email := "john.smith@example.com"
@@ -18,12 +18,12 @@ func TestAccCLookerUserBasics(t *testing.T) {
 		IsUnitTest:   true,
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckLookerUserDestroy,
+		CheckDestroy: testAccCheckUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: generateLookerUserConfig(firstName, lastName, email),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckLookerExists("looker_user.new"),
+					testAccCheckUserExists("looker_user.new"),
 				),
 			},
 		},
@@ -43,7 +43,7 @@ func generateLookerUserConfig(firstName, lastName, email string) string {
 	`, firstName, lastName, email)
 }
 
-func testAccCheckLookerExists(n string) resource.TestCheckFunc {
+func testAccCheckUserExists(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 
@@ -59,7 +59,7 @@ func testAccCheckLookerExists(n string) resource.TestCheckFunc {
 	}
 }
 
-func testAccCheckLookerUserDestroy(s *terraform.State) error {
+func testAccCheckUserDestroy(s *terraform.State) error {
 	sdk := testAccProvider.Meta().(*Config).sdk
 
 	for _, rs := range s.RootModule().Resources {
