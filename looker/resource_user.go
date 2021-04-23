@@ -2,6 +2,7 @@ package looker
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -41,14 +42,26 @@ func resourceUser() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"display_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"email": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"locale": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
 			"home_folder_id": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
+			},
+			"personal_folder_id": {
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"is_disabled": {
@@ -100,21 +113,21 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	_, err = sdk.CreateUserCredentialsEmail(userId, makeCredentialsEmail(creds), "", nil)
 	if err != nil {
 		// delete user if unable to create email credential
-		_, err = sdk.DeleteUser(userId, nil)
+		sdk.DeleteUser(userId, nil)
 		return diag.FromErr(err)
 	}
 
 	// add user to group(s)
-	groups := d.Get("group_ids").([]int64)
-	for g := range groups {
+	groups := d.Get("group_ids").(*schema.Set)
+	for _, g := range groups.List() {
 		u := v3.GroupIdForGroupUserInclusion{
 			UserId: &userId,
 		}
-		sdk.AddGroupUser(int64(g), u, nil)
+		sdk.AddGroupUser(int64(g.(int)), u, nil)
 	}
 
 	// add user to role(s)
-	roles := d.Get("role_ids").([]int64)
+	roles := convertIntSlice(d.Get("role_ids").(*schema.Set).List())
 	sdk.SetUserRoles(userId, roles, "", nil)
 
 	return resourceUserRead(ctx, d, m)
@@ -142,9 +155,12 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 
 	d.Set("first_name", user.FirstName)
 	d.Set("last_name", user.LastName)
+	d.Set("display_name", user.DisplayName)
+	d.Set("email", user.Email)
 	d.Set("locale", user.Locale)
 	d.Set("is_disabled", user.IsDisabled)
 	d.Set("home_folder_id", user.HomeFolderId)
+	d.Set("personal_folder_id", user.PersonalFolderId)
 	d.Set("models_dir_validated", user.ModelsDirValidated)
 	d.Set("group_ids", user.GroupIds)
 	d.Set("role_ids", user.RoleIds)
@@ -160,11 +176,23 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
+	// update user
 	user := makeWriteUser(d)
 	_, err = sdk.UpdateUser(userId, user, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// update email credentials
+	creds := d.Get("credentials_email").([]interface{})[0]
+	_, err = sdk.UpdateUserCredentialsEmail(userId, makeCredentialsEmail(creds), "", nil)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// add user to role(s)
+	roles := convertIntSlice(d.Get("role_ids").([]interface{}))
+	sdk.SetUserRoles(userId, roles, "", nil)
 
 	return resourceUserRead(ctx, d, m)
 }
@@ -202,7 +230,7 @@ func makeWriteUser(d *schema.ResourceData) v3.WriteUser {
 	lastName := d.Get("last_name").(string)
 	locale := d.Get("locale").(string)
 	isDisabled := d.Get("is_disabled").(bool)
-	homeFolderID := d.Get("home_folder_id").(string)
+	homeFolderID := fmt.Sprint(d.Get("home_folder_id").(int))
 	modelsDirValidated := d.Get("models_dir_validated").(bool)
 	uiState := d.Get("ui_state").(map[string]interface{})
 

@@ -35,6 +35,8 @@ func generateLookerUserConfig(firstName, lastName, email string) string {
 	resource "looker_user" "new" {
 		first_name = "%s"
 		last_name = "%s"
+		group_ids = [1]
+		role_ids = [2]
 
 		credentials_email {
 			email = "%s"

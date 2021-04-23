@@ -31,6 +31,14 @@ func formatName(name string) string {
 	return strings.ToLower(namePattern.ReplaceAllString(name, "_"))
 }
 
+func convertIntSlice(s []interface{}) []int64 {
+	s64 := make([]int64, len(s))
+	for i, n := range s {
+		s64[i] = int64(n.(int))
+	}
+	return s64
+}
+
 func extractAuthToken(s string) *string {
 	re := regexp.MustCompile(`(?i)^(?:token|bearer) ([[:alnum:]]+)$`)
 
