@@ -103,6 +103,8 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	creds := d.Get("credentials_email").([]interface{})[0]
 	_, err = sdk.CreateUserCredentialsEmail(userID, makeCredentialsEmail(creds), "", nil)
 	if err != nil {
+		// Clean/remove user if unable to create email credential
+		_, err = sdk.DeleteUser(userID, nil)
 		return diag.FromErr(err)
 	}
 

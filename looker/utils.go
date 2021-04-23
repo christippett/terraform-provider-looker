@@ -25,3 +25,13 @@ func updateSession(sdk *v3.LookerSDK, workspaceId string) (v3.ApiSession, error)
 func formatName(name string) string {
 	return strings.ToLower(namePattern.ReplaceAllString(name, "_"))
 }
+
+func extractAuthToken(s string) *string {
+	re := regexp.MustCompile(`(?i)^(?:token|bearer) ([[:alnum:]]+)$`)
+
+	m := re.FindStringSubmatch(s)
+	if m != nil {
+		return &m[1]
+	}
+	return nil
+}

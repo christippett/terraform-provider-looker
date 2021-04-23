@@ -18,13 +18,9 @@ func init() {
 }
 
 func TestProvider(t *testing.T) {
-	if err := testAccProvider.InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
-}
-
-func TestProvider_impl(t *testing.T) {
-	var _ *schema.Provider = testAccProvider
 }
 
 func testAccPreCheck(t *testing.T) {
@@ -36,5 +32,8 @@ func testAccPreCheck(t *testing.T) {
 	}
 	if err := os.Getenv("LOOKER_CLIENT_SECRET"); err == "" {
 		t.Fatal("LOOKER_CLIENT_SECRET must be set for acceptance tests")
+	}
+	if err := os.Getenv("LOOKER_WORKSPACE_ID"); err == "" {
+		t.Fatal("LOOKER_WORKSPACE_ID must be set for acceptance tests")
 	}
 }

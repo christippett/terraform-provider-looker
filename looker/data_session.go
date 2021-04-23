@@ -2,6 +2,8 @@ package looker
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -46,11 +48,12 @@ func readDataSession(ctx context.Context, d *schema.ResourceData, m interface{})
 		return diag.FromErr(err)
 	}
 
-	d.SetId(*session.WorkspaceId)
 	d.Set("access_token", config.AccessToken)
 	d.Set("workspace_id", session.WorkspaceId)
 	d.Set("user_id", me.Id)
 	d.Set("email", me.Email)
+
+	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
 
 	return diags
 }

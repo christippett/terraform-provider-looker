@@ -2,7 +2,7 @@ package looker
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -76,17 +76,8 @@ type Config struct {
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	var (
-		sdk        *v3.LookerSDK
-		config     Config
-		configured = false
-	)
 
 	return func(ctx context.Context, d *schema.ResourceData) (m interface{}, diags diag.Diagnostics) {
-
-		if configured {
-			return &config, nil
-		}
 
 		workspaceId := d.Get("workspace_id").(string)
 		timeout := d.Get("timeout").(int)
@@ -103,21 +94,12 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		// New instance of LookerSDK
 		authSession := rtl.NewAuthSession(clientConfig)
-		sdk = v3.NewLookerSDK(authSession)
+		sdk := v3.NewLookerSDK(authSession)
 
-		token, err := sdk.Login(v3.RequestLogin{
-			ClientId:     &clientConfig.ClientId,
-			ClientSecret: &clientConfig.ClientSecret,
-		}, nil)
-		if err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Unable to authenticate with Looker SDK",
-				Detail:   err.Error(),
-			})
-			return nil, diags
-		}
+		// Perform initial login
+		accessToken := validateLogin(authSession)
 
+		// Update workspace for the current API session
 		sessionDetail := v3.WriteApiSession{
 			WorkspaceId: &workspaceId,
 		}
@@ -125,16 +107,23 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
-		fmt.Printf("Updated workspace for token: %s (%s)\n", *token.AccessToken, *session.WorkspaceId)
 
-		config = Config{
+		config := Config{
 			sdk:         sdk,
-			AccessToken: token.AccessToken,
+			AccessToken: accessToken,
 			WorkspaceId: session.WorkspaceId,
 			AuthSession: authSession,
 		}
-		configured = true
 
 		return &config, nil
 	}
+}
+
+func validateLogin(authSession *rtl.AuthSession) *string {
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		diag.FromErr(err)
+	}
+	authSession.Authenticate(req)
+	return extractAuthToken(req.Header.Get("Authorization"))
 }

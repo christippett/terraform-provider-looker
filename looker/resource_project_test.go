@@ -42,10 +42,6 @@ func testResourceProject_exists(n string) resource.TestCheckFunc {
 			return fmt.Errorf("Project ID not set")
 		}
 
-		if rs.Primary.Attributes["deploy_key"] == "" {
-			return fmt.Errorf("Git deploy key not available for project")
-		}
-
 		return nil
 	}
 }
