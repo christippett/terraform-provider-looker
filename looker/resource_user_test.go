@@ -24,6 +24,26 @@ func TestAccLookerUserBasics(t *testing.T) {
 				Config: generateLookerUserConfig(firstName, lastName, email),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckUserExists("looker_user.new"),
+					resource.TestCheckResourceAttr(
+						"looker_user.new",
+						"first_name",
+						firstName,
+					),
+					resource.TestCheckResourceAttr(
+						"looker_user.new",
+						"last_name",
+						lastName,
+					),
+					resource.TestCheckResourceAttr(
+						"looker_user.new",
+						"email",
+						email,
+					),
+					resource.TestCheckResourceAttr(
+						"looker_user.new",
+						"credentials_email.0.email",
+						email,
+					),
 				),
 			},
 		},

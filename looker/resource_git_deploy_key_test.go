@@ -13,7 +13,15 @@ func TestAccResourceGitDeployKey(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
+				Config: `
+				resource "looker_project" "test" {
+					name = "terraform_test_project"
+				}
+
+				resource "looker_git_deploy_key" "test" {
+					project_id = looker_project.test.name
+				}
+				`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"looker_git_deploy_key.test", "public_key", regexp.MustCompile("^ssh-rsa ")),
@@ -22,13 +30,3 @@ func TestAccResourceGitDeployKey(t *testing.T) {
 		},
 	})
 }
-
-const config = `
-resource "looker_project" "test" {
-	name = "terraform_test_project"
-}
-
-resource "looker_git_deploy_key" "test" {
-  project_id = looker_project.test.name
-}
-`
