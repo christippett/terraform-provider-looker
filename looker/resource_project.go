@@ -22,15 +22,10 @@ func resourceProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"validation_required": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
-			},
-			"allow_warnings": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
+			"uses_git": {
+				Description: "True if the project is configured with a git repository.",
+				Type:        schema.TypeBool,
+				Computed:    true,
 			},
 		},
 	}
@@ -40,7 +35,7 @@ func resourceProjectCreate(ctx context.Context, d *schema.ResourceData, m interf
 	sdk := m.(*Config).sdk
 
 	// Create project
-	writeProject := createWriteProject(d)
+	writeProject := makeWriteProject(d)
 	project, err := sdk.CreateProject(writeProject, nil)
 
 	if err == nil {
@@ -66,8 +61,7 @@ func resourceProjectRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	d.Set("name", project.Name)
-	d.Set("validation_required", project.ValidationRequired)
-	d.Set("allow_warnings", project.AllowWarnings)
+	d.Set("uses_git", project.UsesGit)
 
 	return diags
 }
@@ -80,7 +74,7 @@ func resourceProjectUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	writeProject := createWriteProject(d)
+	writeProject := makeWriteProject(d)
 	_, err = sdk.UpdateProject(*project.Id, writeProject, "", nil)
 	if err != nil {
 		return diag.FromErr(err)
@@ -101,17 +95,13 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interf
 	}
 }
 
-func createWriteProject(d *schema.ResourceData) v3.WriteProject {
+func makeWriteProject(d *schema.ResourceData) v3.WriteProject {
 	name := d.Get("name").(string)
-	validationRequired := d.Get("validation_required").(bool)
-	allowWarnings := d.Get("allow_warnings").(bool)
 
 	// Remove invalid characters from name
 	name = formatName(name)
 
 	return v3.WriteProject{
-		Name:               &name,
-		ValidationRequired: &validationRequired,
-		AllowWarnings:      &allowWarnings,
+		Name: &name,
 	}
 }
