@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccResourceProjectGitRepo(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -21,13 +21,14 @@ func TestAccResourceProjectGitRepo(t *testing.T) {
 					resource "looker_project_git_repo" "test" {
 						project_id = looker_project.test.name
 						git_remote_url = "git@source.servian.com:looker/demo/terraform-looker-test.git"
+						git_service_name = "gitlab"
 					}
 				`, testAccProjectName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"looker_project_git_repo.test", "id", testAccProjectName),
-					resource.TestMatchResourceAttr(
-						"looker_project_git_repo.test", "public_key", deployKeyPattern),
+					resource.TestCheckResourceAttr(
+						"looker_project.test", "uses_git", "true"),
 				),
 			},
 		},

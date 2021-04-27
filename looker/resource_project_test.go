@@ -11,9 +11,8 @@ const testAccProjectName = "test_project"
 
 func TestResourceProject(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		IsUnitTest: true,
-		PreCheck:   func() { testAccPreCheck(t) },
-		Providers:  testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

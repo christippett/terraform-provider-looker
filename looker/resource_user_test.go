@@ -15,7 +15,6 @@ func TestAccLookerUserBasics(t *testing.T) {
 	email := "john.smith@example.com"
 
 	resource.Test(t, resource.TestCase{
-		IsUnitTest:   true,
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckUserDestroy,
