@@ -43,7 +43,7 @@ func readDataSession(ctx context.Context, d *schema.ResourceData, m interface{})
 		return diag.FromErr(err)
 	}
 
-	me, err := sdk.Me("", nil)
+	me, err := sdk.Me("id,email", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

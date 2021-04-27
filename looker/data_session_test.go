@@ -1,12 +1,9 @@
 package looker
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestDataSession(t *testing.T) {
@@ -18,30 +15,12 @@ func TestDataSession(t *testing.T) {
 			{
 				Config: `data "looker_session" "test" {}`,
 				Check: resource.ComposeTestCheckFunc(
-					testDataSession_exists("data.looker_session.test"),
+					resource.TestCheckResourceAttr("data.looker_session.test", "workspace_id", "dev"),
+					resource.TestCheckResourceAttrSet("data.looker_session.test", "access_token"),
+					resource.TestCheckResourceAttrSet("data.looker_session.test", "user_id"),
+					resource.TestCheckResourceAttrSet("data.looker_session.test", "email"),
 				),
 			},
 		},
 	})
-}
-
-func testDataSession_exists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-
-		if !ok {
-			return fmt.Errorf("Session data not available")
-		}
-
-		if rs.Primary.Attributes["access_token"] == "" {
-			return fmt.Errorf("Access token not available")
-		}
-
-		workspaceId := os.Getenv("LOOKER_WORKSPACE_ID")
-		if rs.Primary.Attributes["workspace_id"] != workspaceId {
-			return fmt.Errorf("Active workspace differs from provider's")
-		}
-
-		return nil
-	}
 }
