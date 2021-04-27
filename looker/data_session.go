@@ -9,9 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSession() *schema.Resource {
+func dataSourceSession() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: readDataSession,
+		ReadContext: dataSourceSessionRead,
 		Schema: map[string]*schema.Schema{
 			"workspace_id": {
 				Type:     schema.TypeString,
@@ -34,7 +34,7 @@ func dataSession() *schema.Resource {
 	}
 }
 
-func readDataSession(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
+func dataSourceSessionRead(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
 	config := m.(*Config)
 	sdk := config.sdk
 

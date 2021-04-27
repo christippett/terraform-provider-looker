@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestDataSession(t *testing.T) {
+func TestAccDataSourceSession(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		IsUnitTest: true,
 		PreCheck:   func() { testAccPreCheck(t) },
