@@ -177,22 +177,28 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 	}
 
 	// update user
-	user := makeWriteUser(d)
-	_, err = sdk.UpdateUser(userId, user, "", nil)
-	if err != nil {
-		return diag.FromErr(err)
+	if d.HasChanges("first_name", "last_name") {
+		user := makeWriteUser(d)
+		_, err = sdk.UpdateUser(userId, user, "", nil)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// update email credentials
-	creds := d.Get("credentials_email").([]interface{})[0]
-	_, err = sdk.UpdateUserCredentialsEmail(userId, makeCredentialsEmail(creds), "", nil)
-	if err != nil {
-		return diag.FromErr(err)
+	if d.HasChange("credentials_email") {
+		creds := d.Get("credentials_email").([]interface{})[0]
+		_, err = sdk.UpdateUserCredentialsEmail(userId, makeCredentialsEmail(creds), "", nil)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// add user to role(s)
-	roles := convertIntSlice(d.Get("role_ids").([]interface{}))
-	sdk.SetUserRoles(userId, roles, "", nil)
+	if d.HasChange("role_ids") {
+		roles := convertIntSlice(d.Get("role_ids").([]interface{}))
+		sdk.SetUserRoles(userId, roles, "", nil)
+	}
 
 	return resourceUserRead(ctx, d, m)
 }
@@ -244,12 +250,4 @@ func makeWriteUser(d *schema.ResourceData) v3.WriteUser {
 		UiState:            &uiState,
 	}
 	return user
-}
-
-func flattenCredentialsEmail(creds *v3.CredentialsEmail) []interface{} {
-	c := make(map[string]interface{})
-	c["email"] = creds.Email
-	c["forced_password_reset_at_next_login"] = creds.ForcedPasswordResetAtNextLogin
-
-	return []interface{}{c}
 }

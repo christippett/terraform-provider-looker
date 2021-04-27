@@ -5,22 +5,38 @@ terraform {
       source  = "dev/looker/looker"
       version = "0.0.1"
     }
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = ">= 3.6"
+    }
   }
 }
 
-variable "looker_base_url" {
+variable "looker" {
+  type = object({
+    base_url      = string
+    client_id     = string
+    client_secret = string
+  })
 }
 
-variable "looker_client_id" {
-}
-
-variable "looker_client_secret" {
+variable "gitlab" {
+  type = object({
+    base_url     = string
+    token        = string
+    namespace_id = number
+  })
 }
 
 provider "looker" {
-  base_url      = var.looker_base_url
-  client_id     = var.looker_client_id
-  client_secret = var.looker_client_secret
+  base_url      = var.looker.base_url
+  client_id     = var.looker.client_id
+  client_secret = var.looker.client_secret
 
   workspace_id = "dev"
+}
+
+provider "gitlab" {
+  base_url = var.gitlab.base_url
+  token    = var.gitlab.token
 }

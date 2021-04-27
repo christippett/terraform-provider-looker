@@ -4,12 +4,16 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
 )
+
+var validProjectNamePattern = regexp.MustCompile(`(?i)[-_a-z0-9]+`)
 
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
@@ -21,6 +25,13 @@ func resourceProject() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+				ValidateDiagFunc: func(v interface{}, p cty.Path) (diags diag.Diagnostics) {
+					name := v.(string)
+					if !validProjectNamePattern.MatchString(name) {
+						return diag.Errorf("Invalid name: %s", name)
+					}
+					return nil
+				},
 			},
 			"uses_git": {
 				Description: "True if the project is configured with a git repository.",
@@ -96,11 +107,7 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interf
 }
 
 func makeWriteProject(d *schema.ResourceData) v3.WriteProject {
-	name := d.Get("name").(string)
-
-	// Remove invalid characters from name
-	name = formatName(name)
-
+	name := strings.ToLower(d.Get("name").(string))
 	return v3.WriteProject{
 		Name: &name,
 	}

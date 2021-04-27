@@ -5,30 +5,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/looker-open-source/sdk-codegen/go/rtl"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
 )
 
-var namePattern = regexp.MustCompile(`[^a-z0-9-_]`)
-
-func check(err error) {
-	if err != nil {
-		panic(err)
+func Find(slice []string, val string) (int, error) {
+	for i, item := range slice {
+		if item == val {
+			return i, nil
+		}
 	}
-}
-
-func updateSession(sdk *v3.LookerSDK, workspaceId string) (v3.ApiSession, error) {
-	sessionDetail := v3.WriteApiSession{
-		WorkspaceId: &workspaceId,
-	}
-	return sdk.UpdateSession(sessionDetail, nil)
-}
-
-func formatName(name string) string {
-	return strings.ToLower(namePattern.ReplaceAllString(name, "_"))
+	return -1, fmt.Errorf("'%s' not a member of: %s", val, slice)
 }
 
 func convertIntSlice(s []interface{}) []int64 {

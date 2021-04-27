@@ -1,16 +1,13 @@
 package looker
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testResourceProjectConfig_basic = `
-resource "looker_project" "test" {
-	name = "test_project"
-}
-`
+const testAccProjectName = "test_project"
 
 func TestResourceProject(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -19,17 +16,21 @@ func TestResourceProject(t *testing.T) {
 		Providers:  testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testResourceProjectConfig_basic,
+				Config: fmt.Sprintf(`
+				resource "looker_project" "test" {
+					name = "%s"
+				}
+				`, testAccProjectName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"looker_project.test",
 						"id",
-						"test_project",
+						testAccProjectName,
 					),
 					resource.TestCheckResourceAttr(
 						"looker_project.test",
 						"name",
-						"test_project",
+						testAccProjectName,
 					),
 				),
 			},

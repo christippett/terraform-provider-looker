@@ -1,6 +1,7 @@
 package looker
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -13,15 +14,15 @@ func TestAccResourceGitDeployKey(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: `
+				Config: fmt.Sprintf(`
 				resource "looker_project" "test" {
-					name = "terraform_test_project"
+					name = "%s"
 				}
 
 				resource "looker_git_deploy_key" "test" {
 					project_id = looker_project.test.name
 				}
-				`,
+				`, testAccProjectName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"looker_git_deploy_key.test", "public_key", regexp.MustCompile("^ssh-rsa ")),

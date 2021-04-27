@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+var deployKeyPattern = regexp.MustCompile(`^(?P<key>ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3})(?: (?P<comment>[^\s]+))?`)
+
 func resourceGitDeployKey() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
@@ -54,12 +56,13 @@ func resourceGitDeployKeyRead(ctx context.Context, d *schema.ResourceData, meta 
 	config := meta.(*Config)
 	path := fmt.Sprintf("/projects/%s/git/deploy_key", d.Id())
 
-	publicKey, err := doRequest("GET", path, config.session)
+	key, err := doRequest("GET", path, config.session)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.Set("public_key", string(publicKey))
+	key = deployKeyPattern.Find(key)
+	d.Set("public_key", string(key))
 
 	return diags
 }
