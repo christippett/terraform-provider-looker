@@ -2,10 +2,12 @@ package looker
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -95,7 +97,13 @@ func resourceProjectUpdate(ctx context.Context, d *schema.ResourceData, m interf
 }
 
 func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interface{}) (diags diag.Diagnostics) {
-	d.SetId("")
+	sdk := m.(*Config).sdk
+
+	// Rename project in lieu of deletion
+	now := time.Now()
+	name := fmt.Sprintf("z%d_%s", now.Unix(), d.Get("name").(string))
+	writeProject := v3.WriteProject{Name: &name}
+	sdk.UpdateProject(d.Id(), writeProject, "", nil)
 
 	return diag.Diagnostics{
 		diag.Diagnostic{
