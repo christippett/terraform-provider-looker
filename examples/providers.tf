@@ -12,22 +12,6 @@ terraform {
   }
 }
 
-variable "looker" {
-  type = object({
-    base_url      = string
-    client_id     = string
-    client_secret = string
-  })
-}
-
-variable "gitlab" {
-  type = object({
-    base_url     = string
-    token        = string
-    namespace_id = number
-  })
-}
-
 provider "looker" {
   base_url      = var.looker.base_url
   client_id     = var.looker.client_id

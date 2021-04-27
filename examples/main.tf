@@ -1,3 +1,5 @@
+data "looker_session" "test" {}
+
 resource "looker_project" "test" {
   name = "test_project"
 }
@@ -15,7 +17,6 @@ resource "looker_git_deploy_key" "test" {
   project_id = looker_project.test.id
 }
 
-
 resource "gitlab_project" "looker" {
   name             = looker_project.test.name
   description      = "Looker test repository created by Terraform"
@@ -27,7 +28,7 @@ resource "gitlab_project" "looker" {
 
 resource "gitlab_deploy_key" "test" {
   project  = gitlab_project.looker.path_with_namespace
-  title    = "Looker deploy key"
+  title    = "Looker git deploy key"
   key      = looker_git_deploy_key.test.public_key
   can_push = true
 }
@@ -42,9 +43,6 @@ resource "looker_project_git_repo" "test" {
   depends_on = [gitlab_deploy_key.test]
 }
 
-
-data "looker_session" "test" {}
-
-output "test_output" {
+output "looker_session" {
   value = data.looker_session.test
 }
