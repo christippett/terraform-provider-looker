@@ -20,7 +20,7 @@ func TestAccResourceGitDeployKey(t *testing.T) {
 				}
 
 				resource "looker_git_deploy_key" "test" {
-					project_id = looker_project.test.name
+					project = looker_project.test.name
 				}
 				`, testAccProjectName),
 				Check: resource.ComposeTestCheckFunc(

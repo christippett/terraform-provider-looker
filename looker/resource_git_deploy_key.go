@@ -21,8 +21,8 @@ func resourceGitDeployKey() *schema.Resource {
 		DeleteContext: resourceGitDeployKeyDelete,
 
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "Looker project ID.",
+			"project": {
+				Description: "Looker project name/ID.",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
@@ -40,7 +40,7 @@ func resourceGitDeployKey() *schema.Resource {
 func resourceGitDeployKeyCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*Config)
 	sdk := config.sdk
-	projectId := d.Get("project_id").(string)
+	projectId := d.Get("project").(string)
 
 	_, err := sdk.CreateGitDeployKey(projectId, nil)
 	if err != nil && !regexp.MustCompile("^response error: 409").MatchString(err.Error()) {

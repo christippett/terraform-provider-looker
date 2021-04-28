@@ -19,7 +19,7 @@ func TestAccResourceProjectGitRepo(t *testing.T) {
 					}
 
 					resource "looker_project_git_repo" "test" {
-						project_id = looker_project.test.name
+						project = looker_project.test.name
 						git_remote_url = "git@source.servian.com:looker/demo/terraform-looker-test.git"
 						git_service_name = "gitlab"
 					}

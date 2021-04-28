@@ -20,12 +20,11 @@ func resourceProjectGitRepo() *schema.Resource {
 		UpdateContext: resourceProjectGitRepoUpdate,
 
 		Schema: map[string]*schema.Schema{
-			"project_id": {
-				Description: "Looker project ID.",
+			"project": {
+				Description: "Looker project ID/name.",
 				Type:        schema.TypeString,
-
-				Required: true,
-				ForceNew: true,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"git_remote_url": {
 				// This description is used by the documentation generator and the language server.
@@ -91,7 +90,7 @@ func resourceProjectGitRepo() *schema.Resource {
 				},
 			},
 			"pull_request_mode": {
-				Description: "",
+				Description: "The git pull request policy for this project.",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
@@ -134,7 +133,7 @@ func resourceProjectGitRepo() *schema.Resource {
 func resourceProjectGitRepoCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	sdk := meta.(*Config).sdk
 
-	projectId := d.Get("project_id").(string)
+	projectId := d.Get("project").(string)
 	d.SetId(projectId)
 
 	project, err := sdk.Project(projectId, "", nil)
@@ -152,29 +151,7 @@ func resourceProjectGitRepoCreate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceProjectGitRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) (diags diag.Diagnostics) {
-	sdk := meta.(*Config).sdk
-
-	project, err := sdk.Project(d.Id(), "", nil)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.Set("project_id", project.Id)
-	d.Set("git_remote_url", project.GitRemoteUrl)
-	d.Set("git_service_name", project.GitServiceName)
-	d.Set("git_username", project.GitUsername)
-	d.Set("git_password", project.GitPassword)
-	d.Set("git_production_branch_name", project.GitProductionBranchName)
-	d.Set("git_username_user_attribute", project.GitUsernameUserAttribute)
-	d.Set("git_password_user_attribute", project.GitPasswordUserAttribute)
-	d.Set("git_application_server_http_port", project.GitApplicationServerHttpPort)
-	d.Set("git_application_server_http_scheme", project.GitApplicationServerHttpScheme)
-	d.Set("pull_request_mode", project.PullRequestMode)
-	d.Set("validation_required", project.ValidationRequired)
-	d.Set("allow_warnings", project.AllowWarnings)
-	d.Set("git_release_mgmt_enabled", project.GitReleaseMgmtEnabled)
-
-	return diags
+	return dataSourceProjectRead(ctx, d, meta)
 }
 
 func resourceProjectGitRepoDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

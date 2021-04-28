@@ -64,7 +64,8 @@ func Provider() *schema.Provider {
 			"looker_project_git_repo": resourceProjectGitRepo(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"looker_session": dataSession(),
+			"looker_session": dataSourceSession(),
+			"looker_project": dataSourceProject(),
 		},
 	}
 	p.ConfigureContextFunc = configure(version, p)
