@@ -19,6 +19,11 @@ func Find(slice []string, val string) (int, error) {
 	return -1, fmt.Errorf("'%s' not a member of: %s", val, slice)
 }
 
+func convertIntToInt64(n int) *int64 {
+	n64 := int64(n)
+	return &n64
+}
+
 func convertIntSlice(s []interface{}) []int64 {
 	s64 := make([]int64, len(s))
 	for i, n := range s {

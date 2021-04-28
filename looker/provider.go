@@ -62,6 +62,7 @@ func Provider() *schema.Provider {
 			"looker_project":          resourceProject(),
 			"looker_git_deploy_key":   resourceGitDeployKey(),
 			"looker_project_git_repo": resourceProjectGitRepo(),
+			"looker_folder":           resourceFolder(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"looker_session": dataSourceSession(),
