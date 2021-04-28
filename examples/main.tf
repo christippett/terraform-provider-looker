@@ -14,7 +14,9 @@ resource "looker_user" "test" {
 }
 
 resource "looker_git_deploy_key" "test" {
-  project_id = looker_project.test.id
+  project = looker_project.test.id
+
+  depends_on = [looker_project.test]
 }
 
 resource "gitlab_project" "looker" {
@@ -34,7 +36,7 @@ resource "gitlab_deploy_key" "test" {
 }
 
 resource "looker_project_git_repo" "test" {
-  project_id                         = looker_project.test.id
+  project                            = looker_project.test.id
   git_remote_url                     = gitlab_project.looker.ssh_url_to_repo
   git_service_name                   = "gitlab"
   git_application_server_http_port   = 443
