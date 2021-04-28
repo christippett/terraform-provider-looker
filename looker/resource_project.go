@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 var validProjectNamePattern = regexp.MustCompile(`(?i)[-_a-z0-9]+`)
@@ -105,7 +105,7 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interf
 	// Rename project in lieu of deletion
 	now := time.Now()
 	name := fmt.Sprintf("z%d_%s", now.Unix(), d.Get("name").(string))
-	writeProject := v3.WriteProject{Name: &name}
+	writeProject := v4.WriteProject{Name: &name}
 	sdk.UpdateProject(d.Id(), writeProject, "", nil)
 
 	return diag.Diagnostics{
@@ -117,9 +117,9 @@ func resourceProjectDelete(ctx context.Context, d *schema.ResourceData, m interf
 	}
 }
 
-func makeWriteProject(d *schema.ResourceData) v3.WriteProject {
+func makeWriteProject(d *schema.ResourceData) v4.WriteProject {
 	name := strings.ToLower(d.Get("name").(string))
-	return v3.WriteProject{
+	return v4.WriteProject{
 		Name: &name,
 	}
 }

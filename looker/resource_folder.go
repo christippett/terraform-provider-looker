@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 func resourceFolder() *schema.Resource {
@@ -27,7 +27,7 @@ func resourceFolder() *schema.Resource {
 			},
 			"parent_id": {
 				Description: "Parent folder ID. If parent is null, the folder is located at the root-level.",
-				Type:        schema.TypeInt,
+				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     1,
 			},
@@ -102,7 +102,7 @@ func resourceFolderCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	name := d.Get("name").(string)
 	parentId := d.Get("parent_id").(string)
 
-	folder, err := sdk.CreateFolder(v3.CreateFolder{
+	folder, err := sdk.CreateFolder(v4.CreateFolder{
 		Name:     name,
 		ParentId: parentId,
 	}, nil)
@@ -135,7 +135,7 @@ func resourceFolderUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 	config := meta.(*Config)
 	sdk := config.sdk
 
-	updateFolder := v3.UpdateFolder{}
+	updateFolder := v4.UpdateFolder{}
 
 	if d.HasChange("name") {
 		updateFolder.Name = d.Get("name").(*string)
@@ -165,7 +165,7 @@ func resourceFolderDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	return nil
 }
 
-func folderToResourceData(folder *v3.Folder, d *schema.ResourceData) error {
+func folderToResourceData(folder *v4.Folder, d *schema.ResourceData) error {
 	d.SetId(*folder.Id)
 	d.Set("name", folder.Name)
 	d.Set("parent_id", folder.ParentId)

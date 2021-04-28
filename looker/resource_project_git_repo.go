@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 func resourceProjectGitRepo() *schema.Resource {
@@ -80,8 +80,8 @@ func resourceProjectGitRepo() *schema.Resource {
 				ValidateDiagFunc: func(v interface{}, p cty.Path) (diags diag.Diagnostics) {
 					val := v.(string)
 					opts := []string{
-						string(v3.GitApplicationServerHttpScheme_Http),
-						string(v3.GitApplicationServerHttpScheme_Https),
+						string(v4.GitApplicationServerHttpScheme_Http),
+						string(v4.GitApplicationServerHttpScheme_Https),
 					}
 					if _, err := Find(opts, val); err != nil {
 						return diag.FromErr(err)
@@ -97,10 +97,10 @@ func resourceProjectGitRepo() *schema.Resource {
 				ValidateDiagFunc: func(v interface{}, p cty.Path) (diags diag.Diagnostics) {
 					val := v.(string)
 					opts := []string{
-						string(v3.PullRequestMode_Links),
-						string(v3.PullRequestMode_Off),
-						string(v3.PullRequestMode_Recommended),
-						string(v3.PullRequestMode_Required),
+						string(v4.PullRequestMode_Links),
+						string(v4.PullRequestMode_Off),
+						string(v4.PullRequestMode_Recommended),
+						string(v4.PullRequestMode_Required),
 					}
 					if _, err := Find(opts, val); err != nil {
 						return diag.FromErr(err)
@@ -162,7 +162,7 @@ func resourceProjectGitRepoUpdate(ctx context.Context, d *schema.ResourceData, m
 	return resourceProjectGitRepoCreate(ctx, d, meta)
 }
 
-func makeWriteProjectGitRepo(d *schema.ResourceData) v3.WriteProject {
+func makeWriteProjectGitRepo(d *schema.ResourceData) v4.WriteProject {
 	var validationRequired, allowWarnings bool
 	var git struct {
 		remoteUrl                   string
@@ -173,11 +173,11 @@ func makeWriteProjectGitRepo(d *schema.ResourceData) v3.WriteProject {
 		usernameUserAttribute       string
 		passwordUserAttribute       string
 		applicationServerHttpPort   int64
-		applicationServerHttpScheme v3.GitApplicationServerHttpScheme
+		applicationServerHttpScheme v4.GitApplicationServerHttpScheme
 		releaseMgmtEnabled          bool
-		pullRequestMode             v3.PullRequestMode
+		pullRequestMode             v4.PullRequestMode
 	}
-	var writeProject v3.WriteProject
+	var writeProject v4.WriteProject
 	if d.HasChange("git_remote_url") {
 		git.remoteUrl = d.Get("git_remote_url").(string)
 		git.serviceName = d.Get("git_service_name").(string)
@@ -198,7 +198,7 @@ func makeWriteProjectGitRepo(d *schema.ResourceData) v3.WriteProject {
 	}
 	if d.HasChanges("git_application_server_http_scheme", "git_application_server_http_port") {
 		git.applicationServerHttpPort = int64(d.Get("git_application_server_http_port").(int))
-		git.applicationServerHttpScheme = v3.GitApplicationServerHttpScheme(d.Get("git_application_server_http_scheme").(string))
+		git.applicationServerHttpScheme = v4.GitApplicationServerHttpScheme(d.Get("git_application_server_http_scheme").(string))
 		writeProject.GitApplicationServerHttpPort = &git.applicationServerHttpPort
 		writeProject.GitApplicationServerHttpScheme = &git.applicationServerHttpScheme
 	}
@@ -211,7 +211,7 @@ func makeWriteProjectGitRepo(d *schema.ResourceData) v3.WriteProject {
 		writeProject.GitReleaseMgmtEnabled = &git.releaseMgmtEnabled
 	}
 	if d.HasChange("pull_request_mode") {
-		git.pullRequestMode = v3.PullRequestMode(d.Get("pull_request_mode").(string))
+		git.pullRequestMode = v4.PullRequestMode(d.Get("pull_request_mode").(string))
 		writeProject.PullRequestMode = &git.pullRequestMode
 	}
 	if d.HasChanges("validation_required", "allow_warnings") {

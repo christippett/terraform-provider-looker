@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/looker-open-source/sdk-codegen/go/rtl"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 var (
@@ -74,7 +74,7 @@ func Provider() *schema.Provider {
 }
 
 type Config struct {
-	sdk         *v3.LookerSDK
+	sdk         *v4.LookerSDK
 	accessToken *string
 	workspaceId *string
 	session     *rtl.AuthSession
@@ -100,13 +100,13 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		// New instance of LookerSDK
 		authSession := rtl.NewAuthSession(clientConfig)
-		sdk := v3.NewLookerSDK(authSession)
+		sdk := v4.NewLookerSDK(authSession)
 
 		// Perform initial login
 		accessToken := validateLogin(authSession)
 
 		// Update workspace for the current API session
-		sessionDetail := v3.WriteApiSession{
+		sessionDetail := v4.WriteApiSession{
 			WorkspaceId: &workspaceId,
 		}
 		session, err := sdk.UpdateSession(sessionDetail, nil)

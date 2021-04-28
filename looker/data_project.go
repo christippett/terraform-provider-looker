@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 func dataSourceProject() *schema.Resource {
@@ -111,7 +111,7 @@ func dataSourceProjectRead(ctx context.Context, d *schema.ResourceData, meta int
 	return nil
 }
 
-func projectToResourceData(project v3.Project, d *schema.ResourceData) {
+func projectToResourceData(project v4.Project, d *schema.ResourceData) {
 	d.Set("name", project.Name)
 	d.Set("git_remote_url", project.GitRemoteUrl)
 	d.Set("git_service_name", project.GitServiceName)

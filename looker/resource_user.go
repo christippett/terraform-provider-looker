@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	v3 "github.com/looker-open-source/sdk-codegen/go/sdk/v3"
+	v4 "github.com/looker-open-source/sdk-codegen/go/sdk/v4"
 )
 
 func resourceUser() *schema.Resource {
@@ -120,7 +120,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	// add user to group(s)
 	groups := d.Get("group_ids").(*schema.Set)
 	for _, g := range groups.List() {
-		u := v3.GroupIdForGroupUserInclusion{
+		u := v4.GroupIdForGroupUserInclusion{
 			UserId: &userId,
 		}
 		sdk.AddGroupUser(int64(g.(int)), u, nil)
@@ -221,17 +221,17 @@ func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface
 	return diags
 }
 
-func makeCredentialsEmail(creds interface{}) v3.WriteCredentialsEmail {
+func makeCredentialsEmail(creds interface{}) v4.WriteCredentialsEmail {
 	credentials := creds.(map[string]interface{})
 	email := credentials["email"].(string)
 	forcedReset := credentials["forced_password_reset_at_next_login"].(bool)
-	return v3.WriteCredentialsEmail{
+	return v4.WriteCredentialsEmail{
 		Email:                          &email,
 		ForcedPasswordResetAtNextLogin: &forcedReset,
 	}
 }
 
-func makeWriteUser(d *schema.ResourceData) v3.WriteUser {
+func makeWriteUser(d *schema.ResourceData) v4.WriteUser {
 	firstName := d.Get("first_name").(string)
 	lastName := d.Get("last_name").(string)
 	locale := d.Get("locale").(string)
@@ -240,7 +240,7 @@ func makeWriteUser(d *schema.ResourceData) v3.WriteUser {
 	modelsDirValidated := d.Get("models_dir_validated").(bool)
 	uiState := d.Get("ui_state").(map[string]interface{})
 
-	user := v3.WriteUser{
+	user := v4.WriteUser{
 		FirstName:          &firstName,
 		LastName:           &lastName,
 		Locale:             &locale,
