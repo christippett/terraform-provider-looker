@@ -12,7 +12,7 @@ import (
 func resourceFolder() *schema.Resource {
 	return &schema.Resource{
 		// This description is used by the documentation generator and the language server.
-		Description: "Sample resource in the Terraform provider scaffolding.",
+		Description: "Folders contain Dashboards and Looks for specific groups of people. You can copy, move, or save Dashboards and Looks to a folder.",
 
 		CreateContext: resourceFolderCreate,
 		ReadContext:   resourceFolderRead,
@@ -30,6 +30,22 @@ func resourceFolder() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     1,
+			},
+			"content_metadata": {
+				Description: "Folder content metadata.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"inherits": {
+							Description: "True if content should inherit its access levels from the parent folder.",
+							Type:        schema.TypeBool,
+							Required:    true,
+						},
+					},
+				},
 			},
 			"content_metadata_id": {
 				Description: "Content metadata ID.",
@@ -109,8 +125,18 @@ func resourceFolderCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	d.SetId(*folder.Id)
+
+	contentMetaBlock := d.Get("content_metadata").([]interface{})
+	if len(contentMetaBlock) > 0 {
+		inherits := contentMetaBlock[0].(map[string]interface{})["inherits"].(bool)
+		_, err := sdk.UpdateContentMetadata(*folder.ContentMetadataId, v4.WriteContentMeta{
+			Inherits: &inherits,
+		}, nil)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
 	return resourceFolderRead(ctx, d, meta)
 }
@@ -128,6 +154,14 @@ func resourceFolderRead(ctx context.Context, d *schema.ResourceData, meta interf
 		return diag.FromErr(err)
 	}
 
+	contentMetaBlock := make([]map[string]interface{}, 1)
+	contentMeta, err := sdk.ContentMetadata(*folder.ContentMetadataId, "", nil)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	contentMetaBlock[0] = make(map[string]interface{})
+	contentMetaBlock[0]["inherits"] = *contentMeta.Inherits
+
 	return nil
 }
 
@@ -138,16 +172,31 @@ func resourceFolderUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 	updateFolder := v4.UpdateFolder{}
 
 	if d.HasChange("name") {
-		updateFolder.Name = d.Get("name").(*string)
+		name := d.Get("name").(string)
+		updateFolder.Name = &name
 	}
 
 	if d.HasChange("parent_id") {
-		updateFolder.ParentId = d.Get("parent_id").(*string)
+		parentId := d.Get("parent_id").(string)
+		updateFolder.ParentId = &parentId
 	}
 
 	_, err := sdk.UpdateFolder(d.Id(), updateFolder, nil)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	if d.HasChange("content_metadata") {
+		contentMetaBlock := d.Get("content_metadata").([]interface{})
+		contentMetadataId := int64(d.Get("content_metadata_id").(int))
+		if len(contentMetaBlock) > 0 {
+			_, err := sdk.UpdateContentMetadata(contentMetadataId, v4.WriteContentMeta{
+				Inherits: contentMetaBlock[0].(*bool),
+			}, nil)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		}
 	}
 
 	return resourceFolderRead(ctx, d, meta)
