@@ -190,8 +190,9 @@ func resourceFolderUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		contentMetaBlock := d.Get("content_metadata").([]interface{})
 		contentMetadataId := int64(d.Get("content_metadata_id").(int))
 		if len(contentMetaBlock) > 0 {
+			inherits := contentMetaBlock[0].(map[string]interface{})["inherits"].(bool)
 			_, err := sdk.UpdateContentMetadata(contentMetadataId, v4.WriteContentMeta{
-				Inherits: contentMetaBlock[0].(*bool),
+				Inherits: &inherits,
 			}, nil)
 			if err != nil {
 				return diag.FromErr(err)
